@@ -1,0 +1,185 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.register-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.hero-section {
+  flex: 1; 
+  background-image: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), url('fruver_fondo.jpg');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+  padding: 60px;
+  color: #ffffff;
+}
+
+.hero-content h1 {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.hero-content p {
+  font-size: 18px;
+  max-width: 500px;
+  opacity: 0.9;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.form-section {
+  width: 460px; 
+  min-width: 360px;
+  background-color: #f9fbf9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px 35px;
+  box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
+  overflow-y: auto; 
+}
+
+.register-card {
+  width: 100%;
+  max-width: 360px;
+}
+
+
+.logo-container {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.logo-container img {
+  max-width: 130px;
+  height: auto;
+  object-fit: contain;
+}
+
+
+.register-card h2 {
+  text-align: center;
+  color: #1b3d2f;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.subtitle {
+  text-align: center;
+  color: #666;
+  font-size: 12px;
+  margin-top: 4px;
+  margin-bottom: 20px;
+}
+
+
+.input-group {
+  margin-bottom: 14px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: #2c4d3e;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-group input, 
+.input-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d0dad3;
+  border-radius: 8px;
+  font-size: 13px;
+  background-color: #ffffff;
+  color: #333;
+  transition: all 0.3s ease;
+}
+
+.input-group select {
+  cursor: pointer;
+}
+
+.input-group input:focus, 
+.input-group select:focus {
+  border-color: #8cc63f;
+  box-shadow: 0 0 0 3px rgba(140, 198, 63, 0.2);
+  outline: none;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  background-color: #8cc63f; 
+  color: #0f311d;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 10px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+button:hover {
+  background-color: #7ab332;
+}
+
+button:active {
+  transform: scale(0.99);
+}
+
+/* Mensajes de error */
+.error-msg {
+  color: #d32f2f;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* Enlace a Login */
+.login-link {
+  text-align: center;
+  font-size: 13px;
+  color: #666;
+  margin-top: 15px;
+}
+
+.login-link a {
+  color: #00a859;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
+}
+
+/* Adaptación para pantallas pequeñas / Móviles */
+@media (max-width: 768px) {
+  .register-container {
+    flex-direction: column;
+  }
+  .hero-section {
+    display: none;
+  }
+  .form-section {
+    width: 100%;
+    height: 100vh;
+  }
+}

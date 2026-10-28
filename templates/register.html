@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Usuario - Sistema de Inventario</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styleregister.css') }}">
+</head>
+<body>
+
+  <div class="register-container">
+    <div class="hero-section">
+      <div class="hero-content">
+        <h1>Únete a la Plataforma</h1>
+        <p>Crea una cuenta para gestionar el control de inventario, entradas, salidas y mermas del supermercado.</p>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="register-card">
+        <div class="logo-container">
+          <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo Supermercado">
+        </div>
+
+        <h2>Crear Cuenta</h2>
+        {% with mensajes = get_flashed_messages(with_categories=true) %}
+         {% for categoria, mensaje in mensajes %}
+            <p class="{{ 'error-msg' if categoria == 'error' else 'success-msg' }}">
+            {{ mensaje }}
+            </p>
+          {% endfor %}
+        {% endwith %}
+        <p class="subtitle">Ingresa los datos para registrar un nuevo usuario</p>
+        
+        <form id="registerForm" action="{{ url_for('usuarios.registro') }}" method="POST">
+          
+          <div class="input-group">
+            <label for="correo">Correo Electrónico</label>
+            <input type="email" id="correo" name="correo" required placeholder="correo@ejemplo.com">
+          </div>
+
+          <div class="input-group">
+            <label for="role">Rol de Usuario</label>
+              <select id="role" name="rol" required>
+                <option value="empleado" selected>Empleado</option>
+                {% if session.get('rol', '').strip().lower() == 'administrador' %}
+                  <option value="administrador">Administrador</option>
+                {% endif %}
+              </select>
+          </div>
+
+          <div class="input-group">
+            <label for="contrasena">Contraseña</label>
+            <input type="password" id="contrasena" name="contrasena" required placeholder="••••••••">
+          </div>
+
+          <div class="input-group">
+            <label for="confirm_password">Confirmar Contraseña</label>
+            <input type="password" id="confirm_password" name="confirm_password" required placeholder="••••••••">
+          </div>
+
+          <button type="submit" id="registerBtn">Registrarse</button>
+
+          <p id="errorMessage" class="error-msg"></p>
+
+          <div class="login-link">
+            ¿Ya tienes una cuenta? <a href="{{ url_for('usuarios.login') }}">Inicia Sesión</a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</body>
+</html>

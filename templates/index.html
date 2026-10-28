@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Inventario - Supermercado</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styleindex.css') }}">
+</head>
+<body>
+
+  <div class="dashboard-container">
+    
+    <!-- LADO IZQUIERDO: Panel Lateral de Opciones (Sidebar) -->
+    <aside class="sidebar">
+      <div class="logo-container">
+        <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo Supermercado">
+      </div>
+
+      <div class="user-info">
+        <p class="user-title">Sesión activa</p>
+        <p class="user-name">{{ session.get('nombre', 'Usuario') }}</p>
+      </div>
+
+      <nav class="menu-nav">
+        <button class="menu-btn {{ 'active' if seccion_activa == 'consultar' else '' }}" onclick="mostrarSeccion('consultar', this)">
+          <span>🔍</span> Consultar Productos
+        </button>
+        <button class="menu-btn {{ 'active' if seccion_activa == 'informe' else '' }}" onclick="mostrarSeccion('informe', this)">
+          <span>📊</span> Informe de conservación
+        </button>
+        {% if session.get('rol', '').strip().lower() == 'administrador' %}
+          <button class="menu-btn" onclick="mostrarSeccion('registrar', this)">
+            <span>➕</span> Registrar Producto
+          </button>
+          <button class="menu-btn" onclick="mostrarSeccion('modificar', this)">
+            <span>✏️</span> Modificar Producto
+          </button>
+          <button class="menu-btn danger" onclick="mostrarSeccion('eliminar', this)">
+            <span>🗑️</span> Eliminar Producto
+          </button>
+          <button class="menu-btn" onclick="mostrarSeccion('registrar usuario', this)">
+            <span>👤</span> Registrar Usuario
+          </button>
+        {% endif %}
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="{{ url_for('usuarios.cerrar_sesion') }}" class="logout-btn">Cerrar Sesión</a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      
+      {% with mensajes = get_flashed_messages(with_categories=true) %}
+        {% for categoria, mensaje in mensajes %}
+          <p class="{{ 'error-msg' if categoria == 'error' else 'success-msg' }}">{{ mensaje }}</p>
+        {% endfor %}
+      {% endwith %}
+
+      <section id="sec-consultar" class="content-section {{ 'hidden' if seccion_activa == 'informe' else '' }}">
+        <div class="header-section">
+          <h2>Consulta de Inventario</h2>
+          <div class="search-box">
+            <input type="text" id="buscarProducto" placeholder="Buscar por código o nombre...">
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>Fecha de ingreso</th>
+                <th>Stock</th>
+                <th>Unidad</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for producto in productos %}
+                <tr>
+                  <td>{{ producto.id_producto }}</td>
+                  <td>{{ producto.nombre }}</td>
+                  <td>{{ producto.categoria }}</td>
+                  <td>{{ producto.fecha_registro.strftime('%Y-%m-%d') if producto.fecha_registro else 'No disponible' }}</td>
+                  <td>{{ producto.cantidad }}</td>
+                  <td>{{ producto.unidad }}</td>
+                  <td>
+                    <span class="status {{ 'low' if producto.cantidad|float <= 5 else 'ok' }}">
+                      {{ 'Bajo Stock' if producto.cantidad|float <= 5 else 'Disponible' }}
+                    </span>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="7">No hay productos registrados.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {% if session.get('rol', '').strip().lower() == 'administrador' %}
+      <section id="sec-registrar" class="content-section hidden">
+        <div class="header-section">
+          <h2>Registrar Nuevo Producto</h2>
+        </div>
+        <p>La fecha de ingreso se asignará automáticamente al guardar. La vida útil se tomará de la duración predeterminada configurada para el producto.</p>
+        <form action="{{ url_for('productos.registrar') }}" method="POST">
+          <div class="form-grid">
+            <div class="input-group">
+              <label>Nombre del Producto</label>
+              <input type="text" name="nombre" required placeholder="Ej: Pera Parda">
+            </div>
+            <div class="input-group">
+              <label>Descripción</label>
+              <input type="text" name="descripcion" placeholder="Descripción opcional">
+            </div>
+            <div class="input-group">
+              <label>Categoría</label>
+              <select name="id_categoria" required>
+                <option value="">Seleccione...</option>
+                {% for categoria in categorias %}
+                  <option value="{{ categoria.id_categoria }}">{{ categoria.nombre }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="input-group">
+              <label>Cantidad (Stock)</label>
+              <input type="number" name="cantidad" min="0" step="0.001" required placeholder="0">
+            </div>
+            <div class="input-group">
+              <label>Fecha de ingreso (automática)</label>
+              <input type="date" value="{{ fecha_hoy }}" readonly>
+            </div>
+            <div class="input-group">
+              <label>Unidad</label>
+              <input type="text" name="unidad" required placeholder="Ej: kg, unidad">
+            </div>
+          </div>
+          <button type="submit" class="action-btn">Guardar Producto</button>
+        </form>
+      </section>
+
+      <section id="sec-modificar" class="content-section hidden">
+        <div class="header-section">
+          <h2>Modificar Producto</h2>
+        </div>
+        {% if productos %}
+          <form action="{{ url_for('productos.modificar') }}" method="POST">
+            <div class="form-grid">
+              <div class="input-group">
+                <label for="producto-modificar">Producto</label>
+                <select id="producto-modificar" name="id_producto" required onchange="cargarProducto()">
+                  <option value="">Seleccione un producto...</option>
+                  {% for producto in productos %}
+                    <option
+                      value="{{ producto.id_producto }}"
+                      data-nombre="{{ producto.nombre }}"
+                      data-descripcion="{{ producto.descripcion or '' }}"
+                      data-categoria="{{ producto.id_categoria }}"
+                      data-cantidad="{{ producto.cantidad }}"
+                      data-unidad="{{ producto.unidad }}"
+                      data-fecha="{{ producto.fecha_vencimiento.strftime('%Y-%m-%d') if producto.fecha_vencimiento else '' }}">
+                      {{ producto.nombre }} (ID: {{ producto.id_producto }})
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="input-group">
+                <label for="modificar-nombre">Nombre del Producto</label>
+                <input id="modificar-nombre" type="text" name="nombre" required>
+              </div>
+              <div class="input-group">
+                <label for="modificar-descripcion">Descripción</label>
+                <input id="modificar-descripcion" type="text" name="descripcion">
+              </div>
+              <div class="input-group">
+                <label for="modificar-categoria">Categoría</label>
+                <select id="modificar-categoria" name="id_categoria" required>
+                  <option value="">Seleccione...</option>
+                  {% for categoria in categorias %}
+                    <option value="{{ categoria.id_categoria }}">{{ categoria.nombre }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="input-group">
+                <label for="modificar-cantidad">Cantidad (Stock)</label>
+                <input id="modificar-cantidad" type="number" name="cantidad" min="0" max="9999999.999" step="0.001" required>
+              </div>
+              <div class="input-group">
+                <label for="modificar-unidad">Unidad</label>
+                <input id="modificar-unidad" type="text" name="unidad" required>
+              </div>
+              <div class="input-group">
+                <label for="modificar-fecha">Fecha de vencimiento real (si se conoce)</label>
+                <input id="modificar-fecha" type="date" name="fecha_vencimiento">
+              </div>
+            </div>
+            <button type="submit" class="action-btn">Guardar Cambios</button>
+          </form>
+        {% else %}
+          <p>No hay productos registrados para modificar.</p>
+        {% endif %}
+      </section>
+
+      {% endif %}
+
+      <section id="sec-informe" class="content-section {{ '' if seccion_activa == 'informe' else 'hidden' }}">
+        <div class="header-section">
+          <h2>Informe de conservación y productos por revisar</h2>
+        </div>
+        <p class="report-note">Este informe es una guía interna para priorizar la revisión física de frutas y verduras. El tiempo es orientativo: alcanzar la fecha estimada no significa que el producto esté dañado ni representa una fecha de vencimiento exigida por ley.</p>
+        <form class="report-filters" action="{{ url_for('productos.informe_conservacion') }}" method="GET">
+          <div class="input-group">
+            <label for="filtro-nombre">Producto</label>
+            <input id="filtro-nombre" type="search" name="nombre" value="{{ informe_nombre }}" placeholder="Buscar por nombre">
+          </div>
+          <div class="input-group">
+            <label for="filtro-categoria">Categoría</label>
+            <select id="filtro-categoria" name="categoria">
+              <option value="">Todas las categorías</option>
+              {% for categoria in informe_categorias %}
+                <option value="{{ categoria.id_categoria }}" {{ 'selected' if informe_categoria == categoria.id_categoria|string else '' }}>{{ categoria.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="filtro-estado">Estado</label>
+            <select id="filtro-estado" name="estado">
+              <option value="">Todos los estados</option>
+              <option value="En seguimiento" {{ 'selected' if informe_estado == 'En seguimiento' else '' }}>En seguimiento</option>
+              <option value="Próximo a revisión" {{ 'selected' if informe_estado == 'Próximo a revisión' else '' }}>Próximo a revisión</option>
+              <option value="Requiere revisión" {{ 'selected' if informe_estado == 'Requiere revisión' else '' }}>Requiere revisión</option>
+              <option value="Sin duración configurada" {{ 'selected' if informe_estado == 'Sin duración configurada' else '' }}>Sin duración configurada</option>
+            </select>
+          </div>
+          <div class="report-filter-actions">
+            <button type="submit" class="action-btn">Filtrar informe</button>
+            <a class="clear-filters" href="{{ url_for('productos.informe_conservacion') }}">Limpiar filtros</a>
+          </div>
+        </form>
+
+        {% set por_revisar = informe_productos | selectattr('estado', 'equalto', 'Requiere revisión') | list | length %}
+        {% if por_revisar %}
+          <div class="report-alert" role="status">
+            {{ por_revisar }} producto(s) de los resultados actuales necesitan una revisión física prioritaria.
+          </div>
+        {% endif %}
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>Cantidad disponible</th>
+                <th>Fecha de ingreso</th>
+                <th>Días transcurridos</th>
+                <th>Fecha estimada de revisión</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for producto in informe_productos %}
+                <tr class="{{ 'review-row' if producto.estado == 'Requiere revisión' else '' }}">
+                  <td>{{ producto.nombre }}</td>
+                  <td>{{ producto.categoria }}</td>
+                  <td>{{ producto.cantidad }} {{ producto.unidad }}</td>
+                  <td>{{ producto.fecha_ingreso.strftime('%Y-%m-%d') if producto.fecha_ingreso else 'No disponible' }}</td>
+                  <td>{{ producto.dias_transcurridos if producto.dias_transcurridos is not none else 'No disponible' }}</td>
+                  <td>{{ producto.fecha_estimada_revision.strftime('%Y-%m-%d') if producto.fecha_estimada_revision else 'Sin estimación' }}</td>
+                  <td>
+                    <span class="status {{ 'review' if producto.estado == 'Requiere revisión' else 'upcoming' if producto.estado == 'Próximo a revisión' else 'follow-up' if producto.estado == 'En seguimiento' else 'unconfigured' }}">
+                      {{ producto.estado }}
+                    </span>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="7">No hay productos de frutas y verduras que coincidan con los filtros.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if session.get('rol', '').strip().lower() == 'administrador' %}
+          <div class="header-section">
+            <h2>Configurar duración orientativa</h2>
+          </div>
+          <p>Configura una duración por tipo de producto. Se aplicará a los lotes actuales y futuros con ese mismo nombre.</p>
+          <form action="{{ url_for('productos.configurar_duracion') }}" method="POST">
+            <div class="report-filters">
+              <div class="input-group">
+                <label for="nombre-producto-vida-util">Fruta o verdura</label>
+                <select id="nombre-producto-vida-util" name="nombre_producto" required>
+                  <option value="">Seleccione un producto...</option>
+                  {% for producto_nombre in informe_nombres %}
+                    <option value="{{ producto_nombre.nombre }}">{{ producto_nombre.nombre }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="input-group">
+                <label for="dias-producto-vida-util">Tiempo orientativo (días)</label>
+                <input id="dias-producto-vida-util" type="number" name="dias_vida_util" min="1" max="3650" step="1" required>
+              </div>
+            </div>
+            <button type="submit" class="action-btn">Guardar duración</button>
+          </form>
+          {% if vidas_utiles %}
+            <div class="table-container configured-durations">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Duración orientativa</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for vida_util in vidas_utiles %}
+                    <tr>
+                      <td>{{ vida_util.nombre_producto }}</td>
+                      <td>{{ vida_util.dias_vida_util }} días</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        {% endif %}
+      </section>
+
+      {% if session.get('rol', '').strip().lower() == 'administrador' %}
+      <section id="sec-eliminar" class="content-section hidden">
+        <div class="header-section">
+          <h2>Eliminar Producto</h2>
+        </div>
+        {% if productos %}
+          <form action="{{ url_for('productos.eliminar') }}" method="POST"
+                onsubmit="return confirm('¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.');">
+            <div class="form-grid">
+              <div class="input-group">
+                <label for="producto-eliminar">Producto</label>
+                <select id="producto-eliminar" name="id_producto" required>
+                  <option value="">Seleccione un producto...</option>
+                  {% for producto in productos %}
+                    <option value="{{ producto.id_producto }}">
+                      {{ producto.nombre }} (ID: {{ producto.id_producto }})
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="action-btn">Eliminar Producto</button>
+          </form>
+        {% else %}
+          <p>No hay productos registrados para eliminar.</p>
+        {% endif %}
+      </section>
+
+      <section id="sec-registrar usuario" class="content-section hidden">
+        <div class="registrar-usuario">
+            <a href="{{ url_for('usuarios.registro') }}" class="register-btn">Registrar Nuevo Usuario</a>
+        </div>
+      </section>
+      {% endif %}
+
+    </main>
+  </div>
+
+  <script>
+    function mostrarSeccion(seccion, boton) {
+      document.querySelectorAll('.content-section').forEach(sec => sec.classList.add('hidden'));
+      document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+      
+      document.getElementById('sec-' + seccion).classList.remove('hidden');
+      boton.classList.add('active');
+    }
+
+    function cargarProducto() {
+      const selector = document.getElementById('producto-modificar');
+      const producto = selector.options[selector.selectedIndex];
+      if (!producto.value) return;
+
+      document.getElementById('modificar-nombre').value = producto.dataset.nombre;
+      document.getElementById('modificar-descripcion').value = producto.dataset.descripcion;
+      document.getElementById('modificar-categoria').value = producto.dataset.categoria;
+      document.getElementById('modificar-cantidad').value = producto.dataset.cantidad;
+      document.getElementById('modificar-unidad').value = producto.dataset.unidad;
+      document.getElementById('modificar-fecha').value = producto.dataset.fecha;
+    }
+  </script>
+</body>
+</html>
